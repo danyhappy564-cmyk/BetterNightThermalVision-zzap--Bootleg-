@@ -1,0 +1,59 @@
+热成像瞄具 T7 夜视仪 优化
+
+            ScopeFps = Config.Bind("热成像瞄具", "帧率限制", false);
+            ScopeGlitch = Config.Bind("热成像瞄具", "扫描线", false);
+            ScopeMotion = Config.Bind("热成像瞄具", "动态模糊", false);
+            ScopeNoise = Config.Bind("热成像瞄具", "噪点", false);
+            ScopePixel = Config.Bind("热成像瞄具", "像素化", false);
+            ScopeChromatic = Config.Bind("热成像瞄具", "边缘色散", false);
+            ScopeBlur = Config.Bind("热成像瞄具", "模糊化", false);
+
+            ScopeMaxDistance = Config.Bind("热成像瞄具", "可视距离", 500f,
+                new ConfigDescription("", new AcceptableValueRange<float>(100f, 2000f)));
+            ScopeDepthFade = Config.Bind("热成像瞄具", "远景衰减 (?)", 0.01f,
+                new ConfigDescription("数值越低，远距离越清晰",
+                    new AcceptableValueRange<float>(0.001f, 0.050f)));
+
+            ScopeUseCustomColor = Config.Bind("热成像瞄具", "修改热成像颜色 (?)", false,
+                new ConfigDescription("警告：\n 任何使用的热成像瞄具模式数值都会被覆盖。\n" +
+                                      "同一组数值并不适用不同的瞄具或色彩模式。\n" +
+                                      "若想恢复，请查阅“初始颜色”项的说明。",
+                    null, new ConfigurationManagerAttributes { IsAdvanced = true }));
+            ScopeMainTexColorCoef = Config.Bind("热成像瞄具", "修改 MainTexColorCoef - 亮度", 0.5f,
+                new ConfigDescription("", new AcceptableValueRange<float>(0.01f, 1f), new ConfigurationManagerAttributes { IsAdvanced = true }));
+            ScopeMinTempValue = Config.Bind("热成像瞄具", "修改 MinTempValue - 色差", 0.2f,
+                new ConfigDescription("", new AcceptableValueRange<float>(-1f, 1f), new ConfigurationManagerAttributes { IsAdvanced = true }));
+            ScopeRampShift = Config.Bind("热成像瞄具", "修改 RampShift - 色偏移", -0.5f,
+                new ConfigDescription("", new AcceptableValueRange<float>(-1f, 1f), new ConfigurationManagerAttributes { IsAdvanced = true }));
+            ApplyReadColorOnce = Config.Bind("热成像瞄具", "修改为瞄具初始颜色值 (?)", false,
+                new ConfigDescription("启用后，将缓存的初始参数写入配置。\n关闭菜单并用一次热成像瞄具即可生效。\n" +
+                                      "只会缓存局内首次使用的热成像模式的参数。\n若想恢复多个瞄具（模式），关闭“修改热成像颜色”后下一局就恢复了",
+                    null, new ConfigurationManagerAttributes { IsAdvanced = true }));
+
+            T7Fps = Config.Bind("T7 热成像", "帧率限制", false);
+            T7Glitch = Config.Bind("T7 热成像", "故障特效", false);
+            T7Motion = Config.Bind("T7 热成像", "动态模糊", false);
+            T7Noise = Config.Bind("T7 热成像", "噪点", false);
+            T7Pixel = Config.Bind("T7 热成像", "像素化", false);
+            T7Blur = Config.Bind("T7 热成像", "模糊化", false);
+            T7BlockScope = Config.Bind("T7 热成像", "禁用光学瞄具 (?)", false,
+                new ConfigDescription("开启后只能在战局外关闭。非单倍镜不具备热成像效果"));
+            T7DepthFade = Config.Bind("T7 热成像", "远景衰减 (?)", 0.01f,
+                new ConfigDescription("数值越低，远距离越清晰。T7 默认值为 0.03",
+                    new AcceptableValueRange<float>(0.001f, 0.050f)));
+
+            T7RedHot = Config.Bind("T7 热成像", "白底红热模式", false);
+            Adv_MainTexColorCoef = Config.Bind("T7 热成像", "白底红热 MainTexColorCoef - 亮度", 0.7f,
+                new ConfigDescription("", new AcceptableValueRange<float>(0.01f, 1f), new ConfigurationManagerAttributes { IsAdvanced = true }));
+            Adv_MinimumTemperatureValue = Config.Bind("T7 热成像", "白底红热 MinTempValue - 色差", 0.1f,
+                new ConfigDescription("", new AcceptableValueRange<float>(-1f, 1f), new ConfigurationManagerAttributes { IsAdvanced = true }));
+            Adv_RampShift = Config.Bind("T7 热成像", "白底红热 RampShift - 色偏移", -0.45f,
+                new ConfigDescription("", new AcceptableValueRange<float>(-1f, 1f), new ConfigurationManagerAttributes { IsAdvanced = true }));
+
+            NVNoise = Config.Bind("夜视仪", "噪点", false);
+            NVScopeDefault = Config.Bind("夜视仪", "使用默认倍镜内亮度 (?)", false,
+                new ConfigDescription("原版塔科夫在使用夜视仪时，倍镜内视野会更暗"));
+            NVScopeBrightness = Config.Bind("夜视仪", "倍镜内亮度 (?)", 1.0f,
+                new ConfigDescription("需要禁用“使用默认倍镜内亮度”",
+                    new AcceptableValueRange<float>(0.5f, 3f)));
+            NVT7Mask = Config.Bind("黑屏遮罩", "T7与夜视仪的黑屏遮罩", false);

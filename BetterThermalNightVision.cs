@@ -1,5 +1,6 @@
 ﻿using BepInEx;
 using BepInEx.Configuration;
+using BepInEx.Logging;
 using BSG.CameraEffects;
 using EFT.CameraControl;
 using HarmonyLib;
@@ -14,6 +15,11 @@ namespace BetterVision
         internal const int ConfigVersion = 132;
         internal static ConfigEntry<int> ConfigFileVersion;
         public static BetterVision Instance;
+
+        // VisionTargets resolves two Harmony targets at runtime and has to be able to
+        // report when it cannot find one. BaseUnityPlugin.Logger is a protected instance
+        // member, so it needs handing out.
+        internal static ManualLogSource PluginLog;
 
         internal static ConfigEntry<bool> ScopeFps;
         internal static ConfigEntry<bool> ScopeGlitch;
@@ -61,6 +67,7 @@ namespace BetterVision
         private void Awake()
         {
             Instance = this;
+            PluginLog = Logger;
             string configPath = Config.ConfigFilePath;
             int oldVersion = 0;
             if (File.Exists(configPath))
@@ -142,7 +149,11 @@ namespace BetterVision
                     new AcceptableValueRange<float>(0.5f, 3f)));
             NVT7Mask = Config.Bind("Black Screen Mask", "Helmet NV & T7", false);
 
-            new Harmony("ciallo.BetterThermalNightVision").PatchAll();
+            var harmony = new Harmony("ciallo.BetterThermalNightVision");
+            harmony.PatchAll();
+            // The two PlayerCameraController hooks cannot be reached by name on a
+            // deobfuscated 4.1 client, so they are attached separately - see VisionTargets.
+            VisionTargets.ApplyDynamicPatches(harmony);
         }
     }
 
@@ -215,12 +226,14 @@ namespace BetterVision
         }
     }
 
-    [HarmonyPatch(typeof(PlayerCameraController), "method_5")]
+    // Attached by VisionTargets, not by PatchAll: on SPT 4.1 the target method has no name
+    // this mod can spell. Postfix stays private-by-convention but has to be reachable through
+    // AccessTools, which ignores accessibility.
     public class Patch_T7Thermal
     {
-        static void Postfix()
+        internal static void Postfix()
         {
-            ThermalVision tv = CameraClass.Instance.ThermalVision;
+            ThermalVision tv = CameraManager.Instance.ThermalVision;
             if (tv == null)
                 return;
 
@@ -239,15 +252,15 @@ namespace BetterVision
         }
     }
 
-    [HarmonyPatch(typeof(PlayerCameraController), "method_4")]
+    // Attached by VisionTargets - see Patch_T7Thermal.
     public class Patch_NV_Noise
     {
-        static void Postfix()
+        internal static void Postfix()
         {
             if (BetterVision.NVNoise.Value)
                 return;
 
-            NightVision nv = CameraClass.Instance.NightVision;
+            NightVision nv = CameraManager.Instance.NightVision;
             if (nv == null)
                 return;
 

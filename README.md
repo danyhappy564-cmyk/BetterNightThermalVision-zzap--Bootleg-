@@ -40,12 +40,17 @@
 `ValuesCoefs`, `ProceduralWeaponAnimation`, `ChromaticAberration` …)은 원래부터 실명이라
 리네임 표에 없습니다 = 그대로입니다.
 
-### 2. 이름이 **사라진** 메서드 3개 — 이름 대신 모양으로 찾습니다
+### 2. 이름을 **믿을 수 없게 된** 메서드 3개 — 이름 대신 모양으로 찾습니다
 
-`method_*` 는 assembly-tool이 갈아엎는 접두사 목록에 들어 있어서, 4.1에는 이 이름들이
-아예 없습니다. 게다가 새 이름은 **어디에도 공개돼 있지 않습니다** — assembly-tool은
-빌드 중에 실명 레퍼런스 어셈블리와 시그니처를 맞춰서 이름을 지어내고, 그 결과를 표로
-남기지 않습니다. 즉 "4.1 이름으로 바꿔 적기"가 불가능한 대상들입니다.
+`method_*` 는 assembly-tool이 갈아엎는 접두사 목록에 들어 있습니다. 그런데 새 이름이
+뭐가 될지는 **어디에도 공개돼 있지 않습니다** — assembly-tool은 빌드 중에 실명 레퍼런스
+어셈블리와 시그니처를 맞춰가며 이름을 지어내고, 그 결과를 표로 남기지 않습니다.
+게다가 그 매칭은 휴리스틱이라 성공할 수도, 원래 이름을 남기고 지나갈 수도 있습니다.
+어느 쪽인지 미리 알 방법이 없으니 "4.1 이름으로 바꿔 적기"가 불가능합니다.
+
+> 실제로 이번 4.1 빌드에서는 `method_4` / `method_5` 가 **안 바뀐 채로 남았습니다**
+> (아래 [검증](#검증) 참고). 이번엔 이름을 박아뒀어도 됐다는 뜻이지만, 그건 다음
+> 빌드에는 보장되지 않는 우연입니다.
 
 | 4.0 대상 | 하는 일 | 4.1에서 어떻게 처리했나 |
 |---|---|---|
@@ -131,18 +136,47 @@ dotnet build BetterThermal.csproj -c Release -p:"SptRoot=D:\내 SPT 경로"
 
 ---
 
-## 확인한 것 / 확인 못 한 것
+## 검증
+
+**SPT 4.1 인게임에서 확인 완료.**
 
 | | 상태 |
 |---|---|
-| 4.1 형태의 API 스텁을 만들어 전체 컴파일 | **통과** (경고는 원본 `ConfigurationManagerAttributes.cs` 것) |
 | `method_4` / `method_5` 지문이 유일한지 | 4.0 어셈블리 메타데이터로 **확인** — 타입 전체에서 각각 1개 |
 | 탐색 로직 자체 | **확인** — 4.1처럼 이름을 바꾸고 같은 시그니처 미끼를 섞은 테스트 타입에서 각각 정확히 1개를 골라냄 |
 | `CameraClass` = `GClass3686` = `CameraManager` | **확인** (위 표 3갈래) |
-| 실제 4.1 `Assembly-CSharp.dll` 로 컴파일 | **못 함** — 이 작업 환경에 4.1 클라이언트 어셈블리가 없습니다 |
-| 인게임 레이드 검증 | **안 함** |
+| 4.1 형태의 API 스텁으로 전체 컴파일 | **통과** (경고는 원본 `ConfigurationManagerAttributes.cs` 것) |
+| 실제 4.1 클라이언트에서 빌드·로드 | **확인** — 패치 5개 전부 부착, 로그에 이 모드발 에러/경고 0건 |
+| 인게임 레이드 | **확인** — 야간 레이드에서 야투경 + 배율 조준경까지 동작 |
 
-마지막 두 줄 때문에, 첫 실행 때 BepInEx 로그에서 다음 줄들을 확인해 주세요:
+로그에 찍힌 것:
+
+```
+[Better Thermal & Night Vision] Patched PlayerCameraController.method_4 for night vision noise.
+[Better Thermal & Night Vision] Patched PlayerCameraController.method_5 for T7 thermal settings.
+```
+
+`Patch_OpticThermal`(`CopyComponentFromOptic`), `Patch_Mask`(`ThermalVision.OnPreCull`),
+`Patch_NVScopeBright_Init`(`OpticCameraManager.Init`), `T7ScopeHook`
+(`ProceduralWeaponAnimation.InitTransforms`) 도 전부 부착됐고, 야투경 + 배율경 조준으로
+`NVScopeBright.Rebuild()` 까지 실제로 도달해 머티리얼 조회도 성공했습니다
+(`Could not find the night-vision material ...` 안 뜸). 그 경로가 곧
+`CameraManager.Instance.NightVision` 을 거치므로 타입 리네임도 인게임에서 검증된 셈입니다.
+
+### 여담: 4.1은 이 두 메서드 이름을 안 바꿨습니다
+
+로그가 `method_4` / `method_5` 를 그대로 찍은 데서 보이듯, assembly-tool의
+`MethodSigRenamer` 가 이 둘은 확신 매칭에 실패해서 원래 이름을 남겼습니다. 즉 이번에는
+이름을 박아뒀어도 동작했을 겁니다. 그래도 지문 방식을 유지하는 이유는 두 가지입니다:
+
+- 탐색이 **독립적으로 같은 메서드를 짚었다**는 교차 검증이 됐습니다
+- 리네이머의 매칭은 EFT 빌드마다 결과가 달라지는 휴리스틱입니다. 다음 빌드에서 이름이
+  바뀌거나 번호가 밀리면, 하드코딩된 `"method_4"` 는 **에러 없이 엉뚱한 메서드**를
+  패치합니다. 지문은 그때도 따라가고, 못 찾으면 로그에 남기고 멈춥니다
+
+### 문제가 생기면
+
+BepInEx 로그에서 이 줄들을 확인해 주세요:
 
 ```
 Patched PlayerCameraController.<이름> for T7 thermal settings.
@@ -150,5 +184,5 @@ Patched PlayerCameraController.<이름> for night vision noise.
 Night-vision material property: <이름>
 ```
 
-세 줄이 다 나오면 이름 해석이 전부 성공한 겁니다. 대신 `Could not find ...` 에러가
-찍히면 그 항목만 동작하지 않는 상태이니 로그를 알려주세요.
+세 번째 줄은 지연 조회라, **야투경을 켠 채 배율 조준경으로 조준**해야 처음 찍힙니다.
+`Could not find ...` 가 찍히면 그 항목만 동작하지 않는 상태입니다.
